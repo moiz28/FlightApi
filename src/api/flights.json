@@ -1,0 +1,20 @@
+{
+  "flights": [
+    {
+      "flight": "Air Canada 8099",
+      "departure": "7:30AM"
+    },
+    {
+      "flight": "United Airline 6115",
+      "departure": "10:30AM"
+    },
+    {
+      "flight": "WestJet 6456",
+      "departure": "12:30PM"
+    },
+    {
+      "flight": "Delta 3833",
+      "departure": "3:00PM"
+    }
+  ]
+}
