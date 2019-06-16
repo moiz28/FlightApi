@@ -6,8 +6,12 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -26,16 +30,23 @@ public class Flight {
         server.setExecutor(null); // creates a default executor
         server.start();
     }
+	
+	 public static String readFileAsString()throws Exception 
+	  { 
+	    String data = ""; 
+	    data = new String(Files.readAllBytes(Paths.get("/Users/moiz/Desktop/finalWorkSpace3/FlightApi/src/api/flights.json"))); 
+	    return data; 
+	  } 
 
     static class FlightHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange t) throws IOException {
         	URI uri = t.getRequestURI();
+        	ArrayList<String> selectedFlights = new ArrayList<String>();
         	String query = uri.getQuery();
         	String[] querySplitted = query.split("=");
         	String departureTime = querySplitted[1];
 			
-			SimpleDateFormat displayFormat = new SimpleDateFormat("HH:mm");
 			SimpleDateFormat parseFormat = new SimpleDateFormat("hh:mma");
 			Date date = null;
 			try {
@@ -44,12 +55,21 @@ public class Flight {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			System.out.println(parseFormat.format(date) + " = " + displayFormat.format(date));
-			
-			JSONObject obj = null;
+			Calendar calMIN = Calendar.getInstance();
+			Calendar calMAX = Calendar.getInstance();
+			calMIN.setTime(date);
+			calMAX.setTime(date);
+			calMIN.add(Calendar.HOUR_OF_DAY, -5);
+			calMAX.add(Calendar.HOUR_OF_DAY, 5);
+			JSONObject obj = null; 
 			try {
-				obj = new JSONObject("{  \"flights\": [{\"flight\": \"Air Canada 8099\",\"departure\": \"7:30AM\"},{\"flight\": \"United Airline 6115\",\"departure\": \"10:30AM\"},{\"flight\": \"WestJet 6456\",\"departure\": \"12:30PM\"},{\"flight\": \"Delta 3833\",\"departure\": \"3:00PM\"}  ]}");
+				String dataStr = readFileAsString();
+				System.out.println(dataStr);
+				obj = new JSONObject(dataStr);
 			} catch (JSONException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
@@ -65,18 +85,36 @@ public class Flight {
 			for(int i = 0; i < objArr.length(); i++)
             {
                 try {
-					System.out.println(objArr.get(i));
+					//System.out.println(objArr.get(i));
+                	JSONObject singleJSONObject = objArr.getJSONObject(i);
+                    String strTime = singleJSONObject.getString("departure");
+                    String flightName = singleJSONObject.getString("flight");
+                    Calendar invTimeCal = Calendar.getInstance();
+                    Date invTime = parseFormat.parse(strTime);
+                    invTimeCal.setTime(invTime);
+                    if((invTimeCal.getTime().compareTo(calMIN.getTime()) > 0 || invTimeCal.getTime().compareTo(calMIN.getTime()) == 0) 
+                    		&& (invTimeCal.getTime().compareTo(calMAX.getTime()) < 0 || invTimeCal.getTime().compareTo(calMAX.getTime()) == 0) ){
+                    	
+                        String flight = "Flight: "+ flightName + " Departure Time: " + strTime + "\n";
+                        selectedFlights.add(flight);            	
+                    }
+                    
 				} catch (JSONException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+				} catch (ParseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
+                
             }
-			
-            String response = "This is the response";
-            t.sendResponseHeaders(200, response.length());
+			// check arraylist length
+
+			String response = selectedFlights.toString().replace('[',' ').replace(']', ' ').replace(',', ' ');
+			t.sendResponseHeaders(200, response.length());
             OutputStream os = t.getResponseBody();
             os.write(response.getBytes());
-            os.close();
+            os.close();  
         }
     }
 }
